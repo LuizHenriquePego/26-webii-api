@@ -1,4 +1,5 @@
 import prisma from "../config/database.js";
+import { NotFoundError } from "../errors/AppError.js";
 
 const publicUserSelect = {
   id: true,
@@ -34,7 +35,7 @@ async function relatedRecordsExist({ subjectId, authorId }) {
     });
 
     if (!subject) {
-      return { ok: false, reason: "SUBJECT_NOT_FOUND" };
+      throw new NotFoundError("Matéria não encontrada");
     }
   }
 
@@ -45,11 +46,9 @@ async function relatedRecordsExist({ subjectId, authorId }) {
     });
 
     if (!author) {
-      return { ok: false, reason: "AUTHOR_NOT_FOUND" };
+      throw new NotFoundError("Autor não encontrado");
     }
   }
-
-  return { ok: true };
 }
 
 export const getAllQuestions = async () => {
@@ -67,11 +66,7 @@ export const getQuestionById = async (questionId) => {
 };
 
 export const createQuestion = async (questionData) => {
-  const relations = await relatedRecordsExist(questionData);
-
-  if (!relations.ok) {
-    return relations;
-  }
+  await relatedRecordsExist(questionData);
 
   const question = await prisma.question.create({
     data: {
@@ -95,14 +90,10 @@ export const updateQuestion = async (questionId, questionData) => {
   });
 
   if (!questionExists) {
-    return { ok: false, reason: "NOT_FOUND" };
+    throw new NotFoundError("Questão não encontrada");
   }
 
-  const relations = await relatedRecordsExist(questionData);
-
-  if (!relations.ok) {
-    return relations;
-  }
+  await relatedRecordsExist(questionData);
 
   const data = {};
 
@@ -146,7 +137,7 @@ export const deleteQuestion = async (questionId) => {
   });
 
   if (!questionExists) {
-    return { ok: false, reason: "NOT_FOUND" };
+    throw new NotFoundError("Questão não encontrada");
   }
 
   try {

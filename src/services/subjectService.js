@@ -1,4 +1,5 @@
 import prisma from "../config/database.js";
+import { NotFoundError, ConflictError } from "../errors/AppError.js";
 
 const publicUserSelect = {
   id: true,
@@ -38,7 +39,7 @@ export const createSubject = async (subjectData) => {
   });
 
   if (!professor) {
-    return { ok: false, reason: "PROFESSOR_NOT_FOUND" };
+    throw new NotFoundError("Professor não encontrado");
   }
 
   const subject = await prisma.subject.create({
@@ -60,7 +61,7 @@ export const updateSubject = async (subjectId, subjectData) => {
   });
 
   if (!subjectExists) {
-    return { ok: false, reason: "NOT_FOUND" };
+    throw new NotFoundError("Matéria não encontrada");
   }
 
   if (Object.hasOwn(subjectData, "professorId")) {
@@ -70,7 +71,7 @@ export const updateSubject = async (subjectId, subjectData) => {
     });
 
     if (!professor) {
-      return { ok: false, reason: "PROFESSOR_NOT_FOUND" };
+      throw new NotFoundError("Professor não encontrado");
     }
   }
 
@@ -107,11 +108,11 @@ export const deleteSubject = async (subjectId) => {
   });
 
   if (!subjectExists) {
-    return { ok: false, reason: "NOT_FOUND" };
+    throw new NotFoundError("Matéria não encontrada");
   }
 
   if (subjectExists._count.questions > 0) {
-    return { ok: false, reason: "SUBJECT_IN_USE" };
+    throw new ConflictError("Matéria possui questões vinculadas");
   }
 
   try {
